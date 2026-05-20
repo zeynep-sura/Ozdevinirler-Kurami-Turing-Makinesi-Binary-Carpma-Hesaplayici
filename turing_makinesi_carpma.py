@@ -39,10 +39,10 @@ class TuringMakinesi:
         # 1. Satır: Bilgiler ve Bant
         print(f"{onsorgu}{bant_gorunumu}")
         
-        # 2. Satır: Sadece ^ işaretini tam kafanın altına hizalar
+        # 2. Satır: ^ işaretini tam kafanın altına hizalar
         print(" " * len(onsorgu) + " " * self.kafa + "^")
         
-        time.sleep(0.01) # Akışı izleyebilmek için bekler
+        time.sleep(0.01) # Akışı izleyebilmek için 
 
     def kafa_hareket_ettir(self, yon):
         if yon == 'R':
@@ -50,66 +50,77 @@ class TuringMakinesi:
         elif yon == 'L':
             self.kafa -= 1
         self.adim += 1
-
-    # TURİNG TOPLAMASI (Bant üstünde işlem yapılıyor)
     def banta_ekle(self, eklenecek_sayi):
-        eski_durum = self.durum
-        self.durum = "q_toplamaya_git"
-        
-        # Sonuç alanının en sağına git
-        while self.bant[self.kafa] != '=':
-            self.adim_yazdir(self.bant[self.kafa], self.bant[self.kafa], 'R')
-            self.kafa_hareket_ettir('R')
+            eski_durum = self.durum
             
-        while self.bant[self.kafa] in ['=', '0', '1']:
-            self.adim_yazdir(self.bant[self.kafa], self.bant[self.kafa], 'R')
-            self.kafa_hareket_ettir('R')
-            
-        self.adim_yazdir('B', 'B', 'L')
-        self.kafa_hareket_ettir('L')
-        
-        # Sayıyı sağdan sola banta ekle (Elde taşıyarak)
-        for bit in reversed(eklenecek_sayi):
-            if bit == '1':
-                mevcut = self.bant[self.kafa]
-                if mevcut == '0':
-                    self.bant[self.kafa] = '1'
-                    self.adim_yazdir('0', '1', 'L')
-                    self.kafa_hareket_ettir('L')
-                elif mevcut == '1': # Elde var 1 durumu
-                    self.bant[self.kafa] = '0'
-                    self.adim_yazdir('1', '0', 'L')
-                    self.kafa_hareket_ettir('L')
-                    
-                    self.durum = "q_elde_tasi"
-                    geri_adim = 0
-                    while self.bant[self.kafa] == '1':
+            # Eşittir (=) işaretine kadar git
+            self.durum = "q_esittire_git"
+            while self.bant[self.kafa] != '=':
+                self.adim_yazdir(self.bant[self.kafa], self.bant[self.kafa], 'R')
+                self.kafa_hareket_ettir('R')
+
+            # Sonuç alanının en sağına git
+            self.durum = "q_sonuca_git"
+            while self.bant[self.kafa] in ['=', '0', '1']:
+                self.adim_yazdir(self.bant[self.kafa], self.bant[self.kafa], 'R')
+                self.kafa_hareket_ettir('R')
+
+            # Boşluğu (B) görünce bir adım sola geri dön
+            self.adim_yazdir('B', 'B', 'L')
+            self.kafa_hareket_ettir('L')
+
+            # Sayıyı sağdan sola doğru bit bit banta ekle
+            for bit in reversed(eklenecek_sayi):
+                if bit == '1':
+                    self.durum = "q_bit_1_ekle"
+                    mevcut = self.bant[self.kafa]
+                    if mevcut == '0':
+                        self.bant[self.kafa] = '1'
+                        self.adim_yazdir('0', '1', 'L')
+                        self.kafa_hareket_ettir('L')
+                    elif mevcut == '1':
+                        # 1 + 1 = 0 durumu (Elde var 1)
                         self.bant[self.kafa] = '0'
                         self.adim_yazdir('1', '0', 'L')
                         self.kafa_hareket_ettir('L')
-                        geri_adim += 1
+
+                        self.durum = "q_elde_1_tasi"
+                        geri_adim = 0
                         
-                    self.bant[self.kafa] = '1'
-                    self.adim_yazdir('0', '1', 'R')
-                    self.kafa_hareket_ettir('R')
-                    
-                    self.durum = "q_toplamaya_devam"
-                    for _ in range(geri_adim):
-                        self.adim_yazdir(self.bant[self.kafa], self.bant[self.kafa], 'R')
+                        while self.bant[self.kafa] == '1':
+                            self.bant[self.kafa] = '0'
+                            self.adim_yazdir('1', '0', 'L')
+                            self.kafa_hareket_ettir('L')
+                            geri_adim += 1
+
+                        # İlk 0'ı bulduğunda 1 yap
+                        self.bant[self.kafa] = '1'
+                        self.adim_yazdir('0', '1', 'R')
                         self.kafa_hareket_ettir('R')
-            else:
+
+                        self.durum = "q_kaldigin_yere_don"
+                        for _ in range(geri_adim):
+                            self.adim_yazdir(self.bant[self.kafa], self.bant[self.kafa], 'R')
+                            self.kafa_hareket_ettir('R')
+
+                        self.adim_yazdir(self.bant[self.kafa], self.bant[self.kafa], 'L')
+                        self.kafa_hareket_ettir('L')
+
+                else:
+                    self.durum = "q_bit_0_ekle"
+                    # Eklenecek bit 0 ise sadece sola kay
+                    self.adim_yazdir(self.bant[self.kafa], self.bant[self.kafa], 'L')
+                    self.kafa_hareket_ettir('L')
+
+            # İşlem bitince tekrar eşittir (=) işaretine geri dön
+            self.durum = "q_esittire_don"
+            while self.bant[self.kafa] != '=':
                 self.adim_yazdir(self.bant[self.kafa], self.bant[self.kafa], 'L')
                 self.kafa_hareket_ettir('L')
-                
-        # İşlem bitince eşittir'e geri dön
-        self.durum = "q_esittire_don"
-        while self.bant[self.kafa] != '=':
-            self.adim_yazdir(self.bant[self.kafa], self.bant[self.kafa], 'L')
-            self.kafa_hareket_ettir('L')
-            
-        # Ana döngü durumuna geri yükle
-        self.durum = eski_durum
 
+            self.durum = eski_durum
+            
+        
     def calistir(self):
         print("\n** Turing Makinesi Başlatıldı **")
         print("-" * 80)
