@@ -1,139 +1,123 @@
 class TuringMakinesi:
+    BLANK = '_'
+
     def __init__(self, plaka):
-        # bant yapısı
-        self.bant = list(plaka) + ['_']  # boşluk sembolü
+        self.bant = list(plaka) + [self.BLANK]
         self.kafa = 0
 
-        # durumlar
-        self.durum = 'q0'
-        self.kabul = 'q_kabul'
-        self.red = 'q_red'
+        self.baslangic = "q_ilk_rakam"
+        self.kabul = "q_kabul"
+        self.red = "q_red"
 
+        self.durum = self.baslangic
         self.adim = 1
 
-        
         self.rakamlar = "0123456789"
-        self.harfler = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        self.buyuk_harfler = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        self.kucuk_harfler = "abcdefghijklmnopqrstuvwxyz"
 
-        # geçiş fonksiyonu
         self.gecisler = self.gecis_fonksiyonu_olustur()
 
     def gecis_fonksiyonu_olustur(self):
         gecis = {}
 
-        # q0 ilk rakam
+        def red_ekle(durum, semboller):
+            for s in semboller:
+                gecis[(durum, s)] = (self.red, s, 'R')
+
+        tum_harfler = self.buyuk_harfler + self.kucuk_harfler
+        # 1. karakter -> rakam
         for r in self.rakamlar:
-            gecis[('q0', r)] = ('q1', r, 'R')
-
-        # q1 ikinci rakam
+            gecis[("q_ilk_rakam", r)] = ("q_ikinci_rakam", r, 'R')
+        red_ekle("q_ilk_rakam", tum_harfler + self.BLANK)
+        # 2. karakter -> rakam
         for r in self.rakamlar:
-            gecis[('q1', r)] = ('q2', r, 'R')
-
-        # q2 ilk büyük harf
-        for h in self.harfler:
-            gecis[('q2', h)] = ('q3', h, 'R')
-
-        # q3 ikinci büyük harf
-        for h in self.harfler:
-            gecis[('q3', h)] = ('q4', h, 'R')
-
-        # q4 ilk rakam
+            gecis[("q_ikinci_rakam", r)] = ("q_ilk_harf", r, 'R')
+        red_ekle("q_ikinci_rakam", tum_harfler + self.BLANK)
+        # 3. karakter -> büyük harf
+        for h in self.buyuk_harfler:
+            gecis[("q_ilk_harf", h)] = ("q_ikinci_harf", h, 'R')
+        red_ekle("q_ilk_harf", self.rakamlar + self.kucuk_harfler + self.BLANK)
+        # 4. karakter -> büyük harf
+        for h in self.buyuk_harfler:
+            gecis[("q_ikinci_harf", h)] = ("q_son_rakam_1", h, 'R')
+        red_ekle("q_ikinci_harf", self.rakamlar + self.kucuk_harfler + self.BLANK)
+        # 5. karakter -> rakam
         for r in self.rakamlar:
-            gecis[('q4', r)] = ('q5', r, 'R')
-
-        # q5 ikinci rakam
+            gecis[("q_son_rakam_1", r)] = ("q_son_rakam_2", r, 'R')
+        red_ekle("q_son_rakam_1", tum_harfler + self.BLANK)
+        # 6. karakter -> rakam
         for r in self.rakamlar:
-            gecis[('q5', r)] = ('q6', r, 'R')
-
-        # q6 üçüncü rakam
+            gecis[("q_son_rakam_2", r)] = ("q_son_rakam_3", r, 'R')
+        red_ekle("q_son_rakam_2", tum_harfler + self.BLANK)
+        # 7. karakter -> rakam
         for r in self.rakamlar:
-            gecis[('q6', r)] = ('q7', r, 'R')
+            gecis[("q_son_rakam_3", r)] = ("q_kontrol", r, 'R')
+        red_ekle("q_son_rakam_3", tum_harfler + self.BLANK)
+        # giriş bitti mi kontrolü
+        gecis[("q_kontrol", self.BLANK)] = (self.kabul, self.BLANK, 'S')
 
-        # q7 yalnızca boşluk gelirse kabul
-        gecis[('q7', '_')] = (self.kabul, '_', 'S')
+        tum_karakterler = (
+            self.rakamlar +
+            self.buyuk_harfler +
+            self.kucuk_harfler
+        )
+        red_ekle("q_kontrol", tum_karakterler)
 
         return gecis
 
     def bant_yazdir(self, okunan, yazilan, yon):
         bant_gorunum = "".join(self.bant)
 
-        bilgi = (
-            f"Adım: {self.adim} | "
-            f"Durum: {self.durum} | "
+        print(
+            f"Adım: {self.adim:<2} | "
+            f"Durum: {self.durum:<18} | "
             f"Okunan: {okunan} | "
             f"Yazılan: {yazilan} | "
-            f"Hareket: {yon}"
+            f"Yön: {yon} | "
+            f"Bant: {bant_gorunum}"
         )
 
-        print(bilgi)
-        print("Bant :", bant_gorunum)
-        print("       " + " " * self.kafa + "^")
-        print("-" * 60)
+        print(" " * 79 + " " * self.kafa + "^")
 
     def calistir(self):
-
         print("\nTuring Makinesi Başlatıldı")
-        print("Girdi:", "".join(self.bant).replace("_", ""))
+        print("Girdi:", "".join(self.bant).replace(self.BLANK, ""))
         print("-" * 60)
-
         while self.durum not in [self.kabul, self.red]:
-
-            # bant sonuna çıkılırsa boşluk oku
             if self.kafa >= len(self.bant):
-                okunan = '_'
-            else:
-                okunan = self.bant[self.kafa]
-
+                self.bant.append(self.BLANK)
+            okunan = self.bant[self.kafa]
             anahtar = (self.durum, okunan)
-
-            # geçiş varsa
             if anahtar in self.gecisler:
-
                 yeni_durum, yazilan, yon = self.gecisler[anahtar]
-
-                # banda yaz
                 self.bant[self.kafa] = yazilan
-
-                # adımı göster
                 self.bant_yazdir(okunan, yazilan, yon)
-
-                # durum değiştir
                 self.durum = yeni_durum
-
-                # kafa hareketi
+               
                 if yon == 'R':
                     self.kafa += 1
-
                 elif yon == 'L':
                     self.kafa -= 1
-
+                elif yon == 'S':
+                    pass
             else:
-                # tanımsız geçiş: RED
                 self.bant_yazdir(okunan, okunan, 'S')
                 self.durum = self.red
-
             self.adim += 1
-
-        # sonuç
         if self.durum == self.kabul:
             print("\nSONUÇ: KABUL")
         else:
             print("\nSONUÇ: RED")
-
-
 def main():
 
     while True:
-
         plaka = input("\nPlaka giriniz (Çıkmak için q): ")
-
         if plaka.lower() == 'q':
             print("Program sonlandırıldı.")
             break
-
         tm = TuringMakinesi(plaka)
         tm.calistir()
-
 
 if __name__ == "__main__":
     main()
